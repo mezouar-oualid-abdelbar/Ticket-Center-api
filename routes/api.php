@@ -1,11 +1,7 @@
 <?php
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
-});
-Route::get('/hello', function () {
-    return ["message" => "fuck niggers"];
-});
+})->middleware('auth:sanctum');
