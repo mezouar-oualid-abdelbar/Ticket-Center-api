@@ -16,8 +16,18 @@ class MessageFactory extends Factory
      */
     public function definition(): array
     {
+            $userIds = \App\Models\User::pluck('id')->toArray();
+            $ticketIds = \App\Models\Ticket::pluck('id')->toArray();
+
         return [
-            //
+
+            'ticket_id' =>   $this->faker->randomElement($ticketIds) ,
+
+            'sender_id' =>  $this->faker->randomElement($userIds) ,
+
+            'message' =>  fake()->sentence,
+
+
         ];
     }
 }

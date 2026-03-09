@@ -6,7 +6,7 @@ use App\Models\Interventions;
 use App\Http\Requests\StoreInterventionsRequest;
 use App\Http\Requests\UpdateInterventionsRequest;
 
-class InterventionsController extends Controller
+class InterventionController extends Controller
 {
     /**
      * Display a listing of the resource.

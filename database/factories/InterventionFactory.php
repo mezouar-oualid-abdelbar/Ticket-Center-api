@@ -5,9 +5,9 @@ namespace Database\Factories;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Assignment>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Intervention>
  */
-class AssignmentFactory extends Factory
+class InterventionFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -20,11 +20,15 @@ class AssignmentFactory extends Factory
         $ticketIds = \App\Models\Ticket::pluck('id')->toArray();
 
         return [
+
+            'appointment' => fake()->date(),
+
             'ticket_id' =>   $this->faker->randomElement($ticketIds) ,
 
             'leader_id' =>  $this->faker->randomElement($userIds) ,
 
-            'dispatcher_id' =>  $this->faker->randomElement($userIds) ,
+            'note' =>  fake()->sentence,
+
 
         ];
     }

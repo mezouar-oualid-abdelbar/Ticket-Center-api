@@ -5,8 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class crew extends Model
+class Intervention extends Model
 {
-    /** @use HasFactory<\Database\Factories\CrewFactory> */
+    /** @use HasFactory<\Database\Factories\InterventionsFactory> */
     use HasFactory;
 }
