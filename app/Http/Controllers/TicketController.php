@@ -13,7 +13,7 @@ class TicketController extends Controller
      */
     public function index()
     {
-        //
+        return "post work";
     }
 
     /**
@@ -29,7 +29,7 @@ class TicketController extends Controller
      */
     public function store(StoreTicketRequest $request)
     {
-        //
+        return "store work";
     }
 
     /**
