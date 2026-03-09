@@ -47,4 +47,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function masseges()
+    {
+        return $this->hasmany(Massege::class, );
+    }
 }

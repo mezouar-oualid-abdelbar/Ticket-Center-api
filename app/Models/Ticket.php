@@ -11,8 +11,21 @@ class Ticket extends Model
 {
     /** @use HasFactory<\Database\Factories\TicketFactory> */
     use HasFactory;
-
+    protected $connection = 'mysql';
+    protected $table = 'tickets';
+    public $timestamps = true;
+    protected $dates = ['deleted_at' ,'completed_at'];
+    //  protected $appends = [];
+    // protected $with = [];
     protected $fillable = [
+        'title',
+        'reporter_id',
+        'description',
+        'status',
+        'priority',
+        'completed_at',
+    ];
+    protected $visible = [
         'title',
         'reporter_id',
         'description',
@@ -27,4 +40,20 @@ class Ticket extends Model
         'priority' => PostPriority::class,
         'completed_at' => 'datetime',
     ];
+
+    public function reporter()
+    {
+        return $this->belongsTo(User::class, 'reporter_id');
+    }
+
+    public function assigments()
+    {
+        return $this->hasmany(Assignment::class, );
+    }
+
+    public function masseges()
+    {
+        return $this->hasmany(Massege::class, );
+    }
+
 }

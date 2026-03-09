@@ -10,10 +10,23 @@ class Message extends Model
     use HasFactory;
 
     /** @use HasFactory<\Database\Factories\MessageFactory> */
-    protected $fillable = [
-        'msg_content',
-    ];
-    protected $visible = ['chat_id'];
 
+    protected $connection = 'mysql';
+    protected $table = 'messages';
+    public $timestamps = true;
+    // protected $dates = ['deleted_at'];
+    //  protected $appends = [];
+    // protected $with = [];
+    protected $fillable = ['message'];
+    protected $visible = ['message'];
+
+    public function ticket()
+    {
+        return $this->belongsTo(User::class, 'ticket_id');
+    }
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
 
 }
