@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class message extends Model
 {
+    use HasFactory;
+    
     /** @use HasFactory<\Database\Factories\MessageFactory> */
     protected $fillable = [
         'msg_content',
     ];
     protected $visible = ['chat_id'];
 
-    use HasFactory;
+    
 }

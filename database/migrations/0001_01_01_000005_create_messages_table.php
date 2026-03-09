@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('chat_id')
-            ->constrained('missions');
+            $table->foreignId('ticket_id')
+                ->constrained('tickets');
             $table->foreignId('sender_id')
-            ->constrained('users')
-            ->cascadeOnDelete();
-            $table->string('msg_content');
+                ->constrained('users')
+                ->cascadeOnDelete();
+            $table->string('message');
             $table->timestamps();
         });
     }
