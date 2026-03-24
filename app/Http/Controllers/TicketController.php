@@ -8,59 +8,63 @@ use App\Http\Requests\UpdateTicketRequest;
 
 class TicketController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    <?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use App\Enums\PostStatus;
+use App\Enums\PostPriority;
+
+class Ticket extends Model
+{
+    /** @use HasFactory<\Database\Factories\TicketFactory> */
+    use HasFactory;
+    protected $connection = 'mysql';
+    protected $table = 'tickets';
+    public $timestamps = true;
+    protected $dates = ['deleted_at' ,'completed_at'];
+    //  protected $appends = [];
+    // protected $with = [];
+    protected $fillable = [
+        'title',
+        'reporter_id',
+        'description',
+        'status',
+        'priority',
+        'completed_at',
+    ];
+    protected $visible = [
+        'title',
+        'reporter_id',
+        'description',
+        'status',
+        'priority',
+        'completed_at',
+    ];
+
+    // --- Add enum casts ---
+    protected $casts = [
+        'status' => PostStatus::class,
+        'priority' => PostPriority::class,
+        'completed_at' => 'datetime',
+    ];
+
+    public function reporter()
     {
-        return "post work";
+        return $this->belongsTo(User::class, 'reporter_id');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function assigments()
     {
-        //
+        return $this->hasmany(Assignment::class, );
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreTicketRequest $request)
+    public function masseges()
     {
-        return "store work";
+        return $this->hasmany(Massege::class, );
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Ticket $ticket)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Ticket $ticket)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateTicketRequest $request, Ticket $ticket)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Ticket $ticket)
-    {
-        //
-    }
+}
 }
