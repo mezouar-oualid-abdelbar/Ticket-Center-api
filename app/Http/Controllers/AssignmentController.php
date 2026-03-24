@@ -8,59 +8,89 @@ use App\Http\Requests\UpdateAssignmentRequest;
 
 class AssignmentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        
+        $assignments = Assignment::with(['ticket', 'leader', 'dispatcher'])->get();
+        return response()->json($assignments);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'ticket_id' => 'required|integer',
+            'leader_id' => 'required|integer',
+            'dispatcher_id' => 'required|integer',
+        ]);
+
+        $assignment = Assignment::create($validated);
+
+        return response()->json($assignment, 201);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreAssignmentRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
     public function show(Assignment $assignment)
     {
-        //
+        return response()->json($assignment->load(['ticket', 'leader', 'dispatcher']));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Assignment $assignment)
+    public function update(Request $request, Assignment $assignment)
     {
-        //
+        $validated = $request->validate([
+            'ticket_id' => 'sometimes|integer',
+            'leader_id' => 'sometimes|integer',
+            'dispatcher_id' => 'sometimes|integer',
+        ]);
+
+        $assignment->update($validated);
+
+        return response()->json($assignment);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateAssignmentRequest $request, Assignment $assignment)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Assignment $assignment)
     {
-        //
+        $assignment->delete();
+        return response()->json(null, 204);
+    }
+
+    public function index()
+    {
+        $assignments = Assignment::with(['ticket', 'leader', 'dispatcher'])->get();
+        return response()->json($assignments);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'ticket_id' => 'required|integer',
+           'leader_id' => 'required|integer',
+           'dispatcher_id' => 'required|integer',
+        ]);
+
+        $assignment = Assignment::create($validated);
+
+        return response()->json($assignment, 201);
+    }
+
+    public function show(Assignment $assignment)
+    {
+        return response()->json($assignment->load(['ticket', 'leader', 'dispatcher']));
+    }
+
+    public function update(Request $request, Assignment $assignment)
+    {
+        $validated = $request->validate([
+            'ticket_id' => 'sometimes|integer',
+            'leader_id' => 'sometimes|integer',
+            'dispatcher_id' => 'sometimes|integer',
+        ]);
+
+        $assignment->update($validated);
+
+        return response()->json($assignment);
+    }
+
+    public function destroy(Assignment $assignment)
+    {
+        $assignment->delete();
+        return response()->json(null, 204);
     }
 }

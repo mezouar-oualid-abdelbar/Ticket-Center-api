@@ -31,5 +31,9 @@ class Assignment extends Model
     {
         return $this->belongsTo(User::class, 'dispatcher_id');
     }
-
+    protected $fillable = [
+    'ticket_id',
+    'leader_id',
+    'dispatcher_id',
+];
 }
