@@ -21,7 +21,11 @@ class Assignment extends Model
 
     public function ticket()
     {
-        return $this->belongsTo(User::class, 'ticket_id');
+        return $this->belongsTo(Ticket::class, 'ticket_id');
+    }
+    public function users()
+    {
+    return $this->belongsToMany(User::class, 'assignment_user');
     }
     public function leader()
     {
@@ -34,6 +38,7 @@ class Assignment extends Model
     protected $fillable = [
     'ticket_id',
     'leader_id',
+    'assignment_user',
     'dispatcher_id',
 ];
 }

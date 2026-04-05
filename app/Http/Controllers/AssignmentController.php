@@ -81,6 +81,7 @@ class AssignmentController extends Controller
             'ticket_id' => 'sometimes|integer',
             'leader_id' => 'sometimes|integer',
             'dispatcher_id' => 'sometimes|integer',
+            'members'       => 'sometimes|array',
         ]);
 
         $assignment->update($validated);
