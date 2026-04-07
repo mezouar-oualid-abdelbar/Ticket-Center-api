@@ -26,12 +26,15 @@ class Ticket extends Model
         'completed_at',
     ];
     protected $visible = [
+        'id',
         'title',
         'reporter_id',
         'description',
         'status',
         'priority',
         'completed_at',
+        'assigments', 
+        'interventions' ,
     ];
 
     // --- Add enum casts ---
@@ -51,9 +54,14 @@ class Ticket extends Model
         return $this->hasmany(Assignment::class, );
     }
 
-    public function masseges()
+    public function messages()
     {
-        return $this->hasmany(Massege::class, );
+        return $this->hasmany(Message::class, );
+    }
+
+    public function interventions()
+    {
+        return $this->hasmany(Intervention::class, );
     }
 
 }

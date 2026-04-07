@@ -20,11 +20,7 @@ return new class extends Migration
             // Related ticket
             $table->foreignId('ticket_id')
                 ->constrained('tickets')
-                ->cascadeOnDelete();
-
-            // Crew leader responsible
-            $table->foreignId('leader_id')
-                ->constrained('users');
+                ->cascadeOnDelete(); 
 
             // Notes about the intervention
             $table->text('note')->nullable();
@@ -33,8 +29,7 @@ return new class extends Migration
             $table->softDeletes();
 
             // Helpful indexes
-            $table->index('ticket_id');
-            $table->index('leader_id');
+            $table->index('ticket_id'); 
         });
     }
 

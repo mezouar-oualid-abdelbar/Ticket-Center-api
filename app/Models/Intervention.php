@@ -16,15 +16,12 @@ class Intervention extends Model
     protected $dates = ['deleted_at','appointment'];
     //  protected $appends = [];
     // protected $with = [];
-    protected $fillable = ['note'];
+    protected $fillable = ['note','appointment','ticket_id'];
     protected $visible = ['note','appointment'];
 
     public function ticket()
     {
         return $this->belongsTo(User::class, 'ticket_id');
     }
-    public function leader()
-    {
-        return $this->belongsTo(User::class, 'leader_id');
-    }
+     
 }

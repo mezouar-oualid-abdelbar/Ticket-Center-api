@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-
+use Illuminate\Support\Facades\Hash;
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
@@ -24,14 +24,26 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // --- USERS ---
-        $users = User::factory(10)->create();
+$users = User::factory(10)->create();
 
-        // --- ROLES & PERMISSIONS ---
-        $roles = collect([
-            Role::create(['name' => 'admin', 'guard_name' => 'web']),
-            Role::create(['name' => 'leader', 'guard_name' => 'web']),
-            Role::create(['name' => 'dispatcher', 'guard_name' => 'web']),
-        ]);
+// Create admin user
+$admin = User::create([
+    'name' => 'admin',
+    'email' => 'admin@gmail.com',
+    'email_verified_at' => now(),
+    'password' => Hash::make('123456789'),
+]);
+
+// --- ROLES ---
+$roles = collect([
+    Role::create(['name' => 'admin', 'guard_name' => 'web']),
+    Role::create(['name' => 'leader', 'guard_name' => 'web']),
+    Role::create(['name' => 'dispatcher', 'guard_name' => 'web']),
+]);
+
+// ✅ Assign ADMIN role to admin user
+$adminRole = $roles->firstWhere('name', 'admin');
+$admin->assignRole($adminRole);
 
         $permissions = collect([
             Permission::create(['name' => 'create_ticket', 'guard_name' => 'web']),

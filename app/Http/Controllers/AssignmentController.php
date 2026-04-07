@@ -3,95 +3,57 @@
 namespace App\Http\Controllers;
 
 use App\Models\Assignment;
-use App\Http\Requests\StoreAssignmentRequest;
-use App\Http\Requests\UpdateAssignmentRequest;
+use App\Models\Ticket;
+use Illuminate\Http\Request;
 
 class AssignmentController extends Controller
 {
-    public function index()
+    public function assign(Request $request, $id)
     {
-        $assignments = Assignment::with(['ticket', 'leader', 'dispatcher'])->get();
-        return response()->json($assignments);
-    }
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'ticket_id' => 'required|integer',
-            'leader_id' => 'required|integer',
-            'dispatcher_id' => 'required|integer',
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'priority' => 'required|in:low,normal,high,critical',
+            'leader_id' => 'nullable|exists:users,id',
+            'technicians' => 'array',
+            'technicians.*' => 'exists:users,id',
         ]);
 
-        $assignment = Assignment::create($validated);
+        $ticket = Ticket::findOrFail($id);
 
-        return response()->json($assignment, 201);
-    }
-
-    public function show(Assignment $assignment)
-    {
-        return response()->json($assignment->load(['ticket', 'leader', 'dispatcher']));
-    }
-
-    public function update(Request $request, Assignment $assignment)
-    {
-        $validated = $request->validate([
-            'ticket_id' => 'sometimes|integer',
-            'leader_id' => 'sometimes|integer',
-            'dispatcher_id' => 'sometimes|integer',
+        // Update ticket info
+        $ticket->update([
+            'title' => $request->title, 
+            'status' => 'assigned',
         ]);
 
-        $assignment->update($validated);
+        // Create Assignment
+        $assignment = Assignment::create([
+            'ticket_id' => $ticket->id,
+            'leader_id' => $request->leader_id,
+            'dispatcher_id' => auth()->id(),
+        ]);
 
+        // Attach technicians
+        if ($request->technicians) {
+            $assignment->technicians()->sync($request->technicians);
+        }
+
+        return response()->json(['message' => 'Assignment created successfully']);
+    }
+    public function assigments(){
+        $assignment = Assignment::with('ticket')->where( 'leader_id' , auth()->id())->get();
         return response()->json($assignment);
     }
+    public function assigment($id)
+{
+    $assignment = Assignment::with([
+        'ticket',
+        'ticket.interventions'
+    ])
+    ->where('id', $id)                 // filter by assignment id
+    ->where('leader_id', auth()->id()) // ensure the authenticated user is the leader
+    ->firstOrFail();                   // get single record or fail
 
-    public function destroy(Assignment $assignment)
-    {
-        $assignment->delete();
-        return response()->json(null, 204);
-    }
-
-    public function index()
-    {
-        $assignments = Assignment::with(['ticket', 'leader', 'dispatcher'])->get();
-        return response()->json($assignments);
-    }
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'ticket_id' => 'required|integer',
-           'leader_id' => 'required|integer',
-           'dispatcher_id' => 'required|integer',
-        ]);
-
-        $assignment = Assignment::create($validated);
-
-        return response()->json($assignment, 201);
-    }
-
-    public function show(Assignment $assignment)
-    {
-        return response()->json($assignment->load(['ticket', 'leader', 'dispatcher']));
-    }
-
-    public function update(Request $request, Assignment $assignment)
-    {
-        $validated = $request->validate([
-            'ticket_id' => 'sometimes|integer',
-            'leader_id' => 'sometimes|integer',
-            'dispatcher_id' => 'sometimes|integer',
-            'members'       => 'sometimes|array',
-        ]);
-
-        $assignment->update($validated);
-
-        return response()->json($assignment);
-    }
-
-    public function destroy(Assignment $assignment)
-    {
-        $assignment->delete();
-        return response()->json(null, 204);
-    }
+    return response()->json($assignment);
+}
 }

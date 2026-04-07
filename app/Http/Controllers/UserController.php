@@ -3,17 +3,22 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\User;
 
 class UserController extends Controller
-{
-    /**
-     * Display a listing of the resource.
-     */
+{ 
     public function index()
     {
         $data = User::all();
         return $data;
     }
+
+    public function technicians(){
+        $users = User::role('technician')->get();
+        return response()->json($users);
+    }
+
+
 
     /**
      * Store a newly created resource in storage.

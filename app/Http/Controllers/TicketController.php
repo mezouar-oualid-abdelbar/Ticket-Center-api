@@ -1,42 +1,74 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Ticket;
-use App\Http\Requests\StoreTicketRequest;
-use App\Http\Requests\UpdateTicketRequest;
-use App\Models\User;
+use Illuminate\Http\Request;
+
 class TicketController extends Controller
 {
-    public function index(){
-        $tickets = Ticket::where('status', 'open');
-        return $tickets;
+    public function index()
+    {
+        $tickets = Ticket::where( 'reporter_id' , auth()->id())->get();
+        return response()->json($tickets);
     }
-    public function store(Request $request){
+
+    public function all()
+    {
+        $tickets = Ticket::All();
+        return response()->json($tickets);
+    }
+
+    public function progress($id) {
+        $ticket = Ticket::with([
+            'assigments.technicians',
+            'assigments.leader',
+            'assigments.dispatcher',
+            'interventions' 
+        ])->findOrFail($id);
+
+        return response()->json($ticket);
+    }
+
+    
+    public function create(Request $request)
+    {
         $request->validate([
-            'title' => 'required|string',
-            'priority' => '',
-            'description' => 'required'
+            'description' => 'required|string',
         ]);
+
         $ticket = Ticket::create([
-            'title' => $request->title,
-            'priority' => $request->priority,
             'description' => $request->description,
-
+            'reporter_id' => auth()->id(),
         ]);
-        return response()->json($ticket, 201);
 
+        return response()->json($ticket, 201);
     }
-    public function update(Request $request, $id){
-        
-    }
-    public function show($id){
+
+    public function show($id)
+    {
         $ticket = Ticket::findOrFail($id);
-        return response()->json($Ticket);
+        return response()->json($ticket);
     }
-    public function destroy($id){
-        $Ticket = Ticket::findOrFail($id);
-        $Ticket->delete();
-        return response()->json(['ticket' => 'Deleted successfully']);
+
+    public function update(Request $request, $id)
+    {
+        $ticket = Ticket::findOrFail($id);
+
+        $request->validate([
+            'description' => 'sometimes|string',
+            'status'      => 'sometimes|in:open,assigned,in_progress,resolved,closed',
+            'priority'    => 'sometimes|nullable|in:low,normal,high,critical',
+        ]);
+
+        $ticket->update($request->only(['description', 'status', 'priority']));
+
+        return response()->json($ticket);
+    }
+
+    public function destroy($id)
+    {
+        $ticket = Ticket::findOrFail($id);
+        $ticket->delete();
+        return response()->json(['message' => 'Deleted successfully']);
     }
 }

@@ -2,65 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Interventions;
-use App\Http\Requests\StoreInterventionsRequest;
-use App\Http\Requests\UpdateInterventionsRequest;
+use App\Models\Intervention; 
+use Illuminate\Http\Request;
 
 class InterventionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreInterventionsRequest $request)
-    {
-        //
-    }
+public function makeAppointment(Request $request)
+{
+    $request->validate([
+        'ticket_id' => 'required|exists:tickets,id', 
+        'appointment' => 'required|date',
+    ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Interventions $interventions)
-    {
-        //
-    }
+    // Create the intervention
+    $intervention = Intervention::create([
+        'ticket_id' => $request->ticket_id,
+        'leader_id' => auth()->id(),
+        'appointment' => $request->appointment,
+        'note' => null, // note can be added later
+    ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Interventions $interventions)
-    {
-        //
-    }
+    // Optional: update ticket status
+    $intervention->ticket->update(['status' => 'in_progress']);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateInterventionsRequest $request, Interventions $interventions)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Interventions $interventions)
-    {
-        //
-    }
+    return response()->json([
+        'message' => 'Appointment created successfully',
+        'intervention' => $intervention,
+    ]);
+}
 }

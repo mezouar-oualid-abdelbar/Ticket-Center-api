@@ -15,18 +15,26 @@ class Assignment extends Model
     public $timestamps = true;
     protected $dates = ['deleted_at'];
     //  protected $appends = [];
-    // protected $with = [];
-    // protected $fillable = [];
+    // protected $with = ['ticket']; 
+
+    protected $fillable = [
+        'ticket_id', 
+        'leader_id',
+        'dispatcher_id',
+    ];
+
     // protected $visible = [];
+
+   public function technicians()
+    {
+        return $this->belongsToMany(User::class, 'assignment_user', 'assignment_id', 'user_id');
+    }
 
     public function ticket()
     {
         return $this->belongsTo(Ticket::class, 'ticket_id');
     }
-    public function users()
-    {
-    return $this->belongsToMany(User::class, 'assignment_user');
-    }
+
     public function leader()
     {
         return $this->belongsTo(User::class, 'leader_id');
@@ -35,10 +43,4 @@ class Assignment extends Model
     {
         return $this->belongsTo(User::class, 'dispatcher_id');
     }
-    protected $fillable = [
-    'ticket_id',
-    'leader_id',
-    'assignment_user',
-    'dispatcher_id',
-];
 }
