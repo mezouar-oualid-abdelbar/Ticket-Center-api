@@ -30,6 +30,7 @@ class AssignmentController extends Controller
         $assignment = Assignment::create([
             'ticket_id' => $ticket->id,
             'leader_id' => $request->leader_id,
+            'priority' => $request->priority,
             'dispatcher_id' => auth()->id(),
         ]);
 

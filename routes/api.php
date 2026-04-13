@@ -98,13 +98,15 @@ Route::middleware(['auth:sanctum', 'role:technician|admin'])
     ->prefix('technician')
     ->group(function () {
 
-    Route::get('/assigments', [AssignmentController::class, 'assigments']); 
+    Route::get('/assignments', [AssignmentController::class, 'assigments']); 
 
-    Route::get('/assigment/{id}', [AssignmentController::class, 'assigment']); 
+    Route::get('/assignment/{id}', [AssignmentController::class, 'assigment']); 
 
     Route::post('/appointment', [InterventionController::class, 'makeAppointment']);
 
+    Route::post('/{id}/intervention/complete', [InterventionController::class, 'complete']);
 
+    Route::post('/{id}/intervention/update', [InterventionController::class, 'update']);
 
 });
 
