@@ -9,24 +9,34 @@ class Message extends Model
 {
     use HasFactory;
 
-    /** @use HasFactory<\Database\Factories\MessageFactory> */
-
     protected $connection = 'mysql';
-    protected $table = 'messages';
-    public $timestamps = true;
-    // protected $dates = ['deleted_at'];
-    //  protected $appends = [];
-    // protected $with = [];
-    protected $fillable = ['message'];
-    protected $visible = ['message'];
+    protected $table     = 'messages';
+    public    $timestamps = true;
 
-    public function ticket()
-    {
-        return $this->belongsTo(User::class, 'ticket_id');
-    }
+    protected $fillable = [
+        'ticket_id',
+        'sender_id',
+        'message',
+    ];
+
+    protected $visible = [
+        'id',
+        'ticket_id',
+        'sender_id',
+        'message',
+        'created_at',
+        'sender',        // appended via relationship
+    ];
+
+    // ── Relations ──────────────────────────────────────────────
+
     public function sender()
     {
         return $this->belongsTo(User::class, 'sender_id');
     }
 
+    public function ticket()
+    {
+        return $this->belongsTo(Ticket::class, 'ticket_id');
+    }
 }
