@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\PostStatus;
 use App\Enums\PostPriority;
+use Illuminate\Database\Eloquent\SoftDeletes;  
 
 class Ticket extends Model
 {
     /** @use HasFactory<\Database\Factories\TicketFactory> */
-    use HasFactory;
+    use HasFactory , SoftDeletes;
     protected $connection = 'mysql';
     protected $table = 'tickets';
     public $timestamps = true;

@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use App\Http\Requests\RegisterRequest;
@@ -17,20 +16,18 @@ class AuthController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | REGISTER  →  sends 6-digit verification code by email
+    | REGISTER — sends 6-digit email verification code
+    | FIX: removed $user->assignRole() which triggered web guard lookup.
+    |      Role is now assigned AFTER email verification.
     |--------------------------------------------------------------------------
     */
     public function register(RegisterRequest $request)
     {
-        // Create user (unverified)
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
         ]);
-
-        // Assign default role
-        $user->assignRole('employee');
 
         // Generate & store 6-digit code
         $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -44,19 +41,26 @@ class AuthController extends Controller
             ]
         );
 
-        // Send email
+        // Send verification email
         Mail::send([], [], function ($message) use ($user, $code) {
             $message->to($user->email, $user->name)
                 ->subject('Your Ticket Center verification code')
-                ->html(view('emails.verify-code', ['code' => $code, 'name' => $user->name])->render());
+                ->html(
+                    view('emails.verify-code', [
+                        'code' => $code,
+                        'name' => $user->name,
+                    ])->render()
+                );
         });
 
-        return response()->json(['message' => 'Account created. Please check your email for the verification code.'], 201);
+        return response()->json([
+            'message' => 'Account created. Please check your email for the 6-digit verification code.',
+        ], 201);
     }
 
     /*
     |--------------------------------------------------------------------------
-    | VERIFY EMAIL
+    | VERIFY EMAIL — marks verified & assigns default role
     |--------------------------------------------------------------------------
     */
     public function verifyEmail(Request $request)
@@ -71,18 +75,27 @@ class AuthController extends Controller
             ->where('code', $request->code)
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             return response()->json(['message' => 'Invalid verification code.'], 422);
         }
 
         if (Carbon::parse($record->expires_at)->isPast()) {
-            return response()->json(['message' => 'Verification code has expired. Please request a new one.'], 422);
+            return response()->json([
+                'message' => 'Verification code has expired. Please request a new one.',
+            ], 422);
         }
 
-        // Mark email as verified
-        User::where('email', $request->email)->update(['email_verified_at' => Carbon::now()]);
+        $user = User::where('email', $request->email)->first();
 
-        // Clean up
+        // Mark verified
+        $user->update(['email_verified_at' => Carbon::now()]);
+
+        // Assign default role NOW (safe — user exists & is verified)
+        if (! $user->hasAnyRole(['employee', 'manager', 'admin', 'technician'])) {
+            $user->assignRole('employee');
+        }
+
+        // Clean up code
         DB::table('email_verification_codes')->where('email', $request->email)->delete();
 
         return response()->json(['message' => 'Email verified successfully. You can now log in.']);
@@ -117,7 +130,12 @@ class AuthController extends Controller
         Mail::send([], [], function ($message) use ($user, $code) {
             $message->to($user->email, $user->name)
                 ->subject('Your new Ticket Center verification code')
-                ->html(view('emails.verify-code', ['code' => $code, 'name' => $user->name])->render());
+                ->html(
+                    view('emails.verify-code', [
+                        'code' => $code,
+                        'name' => $user->name,
+                    ])->render()
+                );
         });
 
         return response()->json(['message' => 'A new verification code has been sent.']);
@@ -125,18 +143,18 @@ class AuthController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | LOGIN  (requires verified email)
+    | LOGIN
     |--------------------------------------------------------------------------
     */
     public function login(LoginRequest $request)
     {
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json(['error' => 'Invalid email or password.'], 401);
         }
 
-        if (!$user->email_verified_at) {
+        if (! $user->email_verified_at) {
             return response()->json([
                 'error'            => 'Please verify your email before logging in.',
                 'email_unverified' => true,
@@ -146,10 +164,10 @@ class AuthController extends Controller
         // Revoke old tokens
         $user->tokens()->delete();
 
-        $tokenResult  = $user->createToken('user_token');
-        $token        = $tokenResult->plainTextToken;
-        $tokenModel   = $tokenResult->accessToken;
-        $tokenModel->expires_at = Carbon::now()->addHours(7);
+        $tokenResult             = $user->createToken('user_token');
+        $token                   = $tokenResult->plainTextToken;
+        $tokenModel              = $tokenResult->accessToken;
+        $tokenModel->expires_at  = Carbon::now()->addHours(7);
         $tokenModel->save();
 
         return response()->json([
@@ -197,16 +215,15 @@ class AuthController extends Controller
 
     /*
     |--------------------------------------------------------------------------
-    | FORGOT PASSWORD  →  sends a signed reset URL by email
+    | FORGOT PASSWORD
     |--------------------------------------------------------------------------
     */
     public function forgotPassword(Request $request)
     {
         $request->validate(['email' => 'required|email']);
 
-        // Always return 200 to avoid user enumeration
         $user = User::where('email', $request->email)->first();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'If that email exists, a reset link has been sent.']);
         }
 
@@ -214,10 +231,7 @@ class AuthController extends Controller
 
         DB::table('password_reset_tokens')->updateOrInsert(
             ['email' => $request->email],
-            [
-                'token'      => Hash::make($token),
-                'created_at' => Carbon::now(),
-            ]
+            ['token' => Hash::make($token), 'created_at' => Carbon::now()]
         );
 
         $resetUrl = config('app.frontend_url', 'http://localhost:5173')
@@ -227,7 +241,12 @@ class AuthController extends Controller
         Mail::send([], [], function ($message) use ($user, $resetUrl) {
             $message->to($user->email, $user->name)
                 ->subject('Reset your Ticket Center password')
-                ->html(view('emails.reset-password', ['url' => $resetUrl, 'name' => $user->name])->render());
+                ->html(
+                    view('emails.reset-password', [
+                        'url'  => $resetUrl,
+                        'name' => $user->name,
+                    ])->render()
+                );
         });
 
         return response()->json(['message' => 'If that email exists, a reset link has been sent.']);
@@ -241,20 +260,19 @@ class AuthController extends Controller
     public function resetPassword(Request $request)
     {
         $request->validate([
-            'token'                 => 'required',
-            'email'                 => 'required|email|exists:users,email',
-            'password'              => 'required|min:6|confirmed',
+            'token'    => 'required',
+            'email'    => 'required|email|exists:users,email',
+            'password' => 'required|min:6|confirmed',
         ]);
 
         $record = DB::table('password_reset_tokens')
             ->where('email', $request->email)
             ->first();
 
-        if (!$record || !Hash::check($request->token, $record->token)) {
+        if (! $record || ! Hash::check($request->token, $record->token)) {
             return response()->json(['message' => 'Invalid or expired reset token.'], 422);
         }
 
-        // Tokens expire after 60 minutes
         if (Carbon::parse($record->created_at)->addMinutes(60)->isPast()) {
             DB::table('password_reset_tokens')->where('email', $request->email)->delete();
             return response()->json(['message' => 'Reset link has expired. Please request a new one.'], 422);
