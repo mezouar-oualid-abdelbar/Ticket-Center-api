@@ -34,35 +34,25 @@ Route::get('/login', fn() => response()->json(['message' => 'unauthenticated']))
 */
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Auth
     Route::get('/me',      [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Tickets created by this user
-    Route::get('/ticket',  [TicketController::class, 'index']);
-    Route::post('/ticket', [TicketController::class, 'create']);
-
-    // All unresolved tickets where user is reporter, leader, or technician
-    // Used by HomePage and Messages dropdown
+    Route::get('/ticket',     [TicketController::class, 'index']);
+    Route::post('/ticket',    [TicketController::class, 'create']);
     Route::get('/my-tickets', [TicketController::class, 'myTickets']);
 
-    // Chat messages per ticket
     Route::get('/messages/{ticketId}',  [MessageController::class, 'index']);
     Route::post('/messages/{ticketId}', [MessageController::class, 'store']);
 
-    // Reverb private-channel auth (Sanctum Bearer token required)
-    Route::post('/broadcasting/auth', function (Request $request) {
-        return Broadcast::auth($request);
-    });
-
+    Route::post('/broadcasting/auth', fn(Request $r) => Broadcast::auth($r));
 });
 
 /*
 |--------------------------------------------------------------------------
-| Manager / Admin
+| dispatcher / Admin
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'role:manager|admin'])
+Route::middleware(['auth:sanctum', 'role:dispatcher|admin'])
     ->prefix('manager')
     ->group(function () {
         Route::get('/ticket',               [TicketController::class, 'all']);
@@ -85,4 +75,19 @@ Route::middleware(['auth:sanctum', 'role:technician|admin'])
         Route::post('/appointment',                [InterventionController::class, 'makeAppointment']);
         Route::post('/{id}/intervention/complete', [InterventionController::class, 'complete']);
         Route::post('/{id}/intervention/update',   [InterventionController::class, 'update']);
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Admin only — user management
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'role:admin'])
+    ->prefix('admin')
+    ->group(function () {
+        Route::get('/users',               [UserController::class, 'index']);
+        Route::post('/users',              [UserController::class, 'store']);
+        Route::delete('/users/{id}',       [UserController::class, 'destroy']);
+        Route::patch('/users/{id}/role',   [UserController::class, 'assignRole']);
+        Route::get('/roles',               [UserController::class, 'roles']);
     });

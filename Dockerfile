@@ -1,5 +1,5 @@
 # =============================================================================
-# Ticket Center — API  (PHP 8.4 · Laravel 12 · Nginx · Reverb · Supervisord)
+# Ticket Center — API  (PHP 8.4 · Laravel 12 · Nginx · Supervisord)
 # =============================================================================
 FROM php:8.4-fpm-alpine
 
@@ -11,23 +11,23 @@ RUN apk add --no-cache \
         linux-headers \
         zip unzip mysql-client
 
-# ── PHP extensions ───────────────────────────────────────────────────────────
+# ── PHP extensions ────────────────────────────────────────────────────────────
 RUN docker-php-ext-install \
         pdo_mysql mbstring exif pcntl bcmath gd zip sockets intl opcache
 
-# ── Opcache ──────────────────────────────────────────────────────────────────
+# ── Opcache ───────────────────────────────────────────────────────────────────
 RUN { echo "opcache.enable=1"; \
       echo "opcache.memory_consumption=128"; \
       echo "opcache.max_accelerated_files=10000"; \
       echo "opcache.validate_timestamps=0"; \
     } > /usr/local/etc/php/conf.d/opcache.ini
 
-# ── Composer ─────────────────────────────────────────────────────────────────
+# ── Composer ──────────────────────────────────────────────────────────────────
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# ── Dependencies ─────────────────────────────────────────────────────────────
+# ── PHP dependencies ──────────────────────────────────────────────────────────
 COPY composer.json composer.lock ./
 RUN composer install \
         --no-dev \
@@ -36,11 +36,14 @@ RUN composer install \
         --no-interaction \
         --prefer-dist
 
-# ── Application code ──────────────────────────────────────────────────────────
 COPY . .
-RUN composer dump-autoload --optimize --no-dev
 
-# ── Permissions ──────────────────────────────────────────────────────────────
+# ── Autoloader ────────────────────────────────────────────────────────────────
+# --no-scripts prevents package:discover from running at build time
+# (it needs a real env + DB, so we run it in the entrypoint instead)
+RUN composer dump-autoload --optimize --no-dev --no-scripts
+
+# ── Permissions ───────────────────────────────────────────────────────────────
 RUN chown -R www-data:www-data /var/www \
  && chmod -R 775 storage bootstrap/cache \
  && mkdir -p storage/logs \
@@ -48,7 +51,7 @@ RUN chown -R www-data:www-data /var/www \
               storage/framework/sessions \
               storage/framework/views
 
-# ── Nginx (Removed Manual CORS Headers) ──────────────────────────────────────
+# ── Nginx config ──────────────────────────────────────────────────────────────
 RUN printf '%s\n' \
     'user nginx;' \
     'worker_processes auto;' \
@@ -65,6 +68,18 @@ RUN printf '%s\n' \
     '        server_name _;' \
     '        root /var/www/public;' \
     '        index index.php;' \
+    '        set $cors_origin "";' \
+    '        if ($http_origin ~* "^http://(localhost|127\.0\.0\.1)(:[0-9]+)?$") {' \
+    '            set $cors_origin $http_origin;' \
+    '        }' \
+    '        add_header Access-Control-Allow-Origin  $cors_origin always;' \
+    '        add_header Access-Control-Allow-Methods "GET,POST,PUT,PATCH,DELETE,OPTIONS" always;' \
+    '        add_header Access-Control-Allow-Headers "Authorization,Content-Type,Accept,X-Requested-With,X-Socket-Id" always;' \
+    '        add_header Access-Control-Allow-Credentials "true" always;' \
+    '        add_header Access-Control-Max-Age 86400 always;' \
+    '        if ($request_method = OPTIONS) {' \
+    '            return 204;' \
+    '        }' \
     '        location = /favicon.ico { log_not_found off; access_log off; }' \
     '        location / { try_files $uri $uri/ /index.php?$query_string; }' \
     '        location ~ \.php$ {' \
@@ -78,7 +93,9 @@ RUN printf '%s\n' \
     '    }' \
     '}' > /etc/nginx/nginx.conf
 
-# ── Supervisord ───────────────────────────────────────────────────────────────
+# ── Supervisord config ────────────────────────────────────────────────────────
+# Only manages php-fpm + nginx.
+# reverb and queue are separate containers with their own entrypoint overrides.
 RUN mkdir -p /etc/supervisor/conf.d && printf '%s\n' \
     '[supervisord]' \
     'nodaemon=true' \
@@ -91,40 +108,52 @@ RUN mkdir -p /etc/supervisor/conf.d && printf '%s\n' \
     'autostart=true' \
     'autorestart=true' \
     'stdout_logfile=/dev/stdout' \
+    'stdout_logfile_maxbytes=0' \
     'stderr_logfile=/dev/stderr' \
+    'stderr_logfile_maxbytes=0' \
     '' \
     '[program:nginx]' \
     'command=nginx -g "daemon off;"' \
     'autostart=true' \
     'autorestart=true' \
     'stdout_logfile=/dev/stdout' \
+    'stdout_logfile_maxbytes=0' \
     'stderr_logfile=/dev/stderr' \
-    '' \
-    '[program:reverb]' \
-    'command=php /var/www/artisan reverb:start --host=0.0.0.0 --port=8080 --no-interaction' \
-    'autostart=true' \
-    'autorestart=true' \
-    'stdout_logfile=/dev/stdout' \
-    'stderr_logfile=/dev/stderr' \
+    'stderr_logfile_maxbytes=0' \
     > /etc/supervisor/conf.d/supervisord.conf
 
-# ── Entrypoint (Fixes the "missing .env" and DB Wait issues) ─────────────────
+# ── Entrypoint script ─────────────────────────────────────────────────────────
 RUN printf '%s\n' \
     '#!/bin/bash' \
     'set -e' \
     'cd /var/www' \
+    '' \
+    '# Wait for MySQL' \
     'if [ -n "$DB_HOST" ]; then' \
-    '  until mysqladmin ping -h"$DB_HOST" -P"${DB_PORT:-3306}" -u"$DB_USERNAME" -p"$DB_PASSWORD" --silent 2>/dev/null; do echo "Waiting for DB..."; sleep 2; done' \
+    '  echo "Waiting for MySQL at $DB_HOST:${DB_PORT:-3306}..."' \
+    '  until mysqladmin ping -h"$DB_HOST" -P"${DB_PORT:-3306}" -u"$DB_USERNAME" -p"$DB_PASSWORD" --silent 2>/dev/null; do' \
+    '    sleep 2' \
+    '  done' \
+    '  echo "MySQL is ready."' \
     'fi' \
-    '# Create a dummy .env if it does not exist to prevent artisan errors' \
-    'if [ ! -f .env ]; then touch .env; fi' \
-    'if [ -z "$APP_KEY" ]; then php artisan key:generate --force; fi' \
+    '' \
+    '# Generate app key if missing' \
+    'if [ -z "$APP_KEY" ]; then' \
+    '  php artisan key:generate --force' \
+    'fi' \
+    '' \
+    '# Run package discovery at runtime (needs real env + packages)' \
+    'php artisan package:discover --ansi || true' \
+    '' \
+    '# Run migrations' \
     'php artisan migrate --force' \
+    '' \
+    '# Cache for performance' \
     'php artisan config:cache' \
     'php artisan route:cache' \
     'php artisan view:cache' \
-    'exec supervisord -c /etc/supervisor/conf.d/supervisord.conf' \
-    > /entrypoint.sh && chmod +x /entrypoint.sh
+    '' \
+    '# Start supervisord (php-fpm + nginx)' \
+    'exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf'
 
-EXPOSE 8000 8080
-ENTRYPOINT ["/entrypoint.sh"]
+EXPOSE 8000
