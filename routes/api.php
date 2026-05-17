@@ -57,6 +57,7 @@ Route::middleware(['auth:sanctum', 'role:dispatcher|admin'])
     ->group(function () {
         Route::get('/ticket',               [TicketController::class, 'all']);
         Route::get('/ticket/{id}',          [TicketController::class, 'show']);
+        Route::put('/ticket/{id}',          [TicketController::class, 'update']);
         Route::get('/technicians',          [UserController::class, 'technicians']);
         Route::post('/ticket/{id}/assign',  [AssignmentController::class, 'assign']);
         Route::get('/ticket/{id}/progress', [TicketController::class, 'progress']);

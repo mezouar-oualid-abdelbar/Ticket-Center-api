@@ -36,6 +36,7 @@ class Ticket extends Model
         'completed_at',
         'assigments', 
         'interventions' ,
+        'reporter',
     ];
 
     // --- Add enum casts ---

@@ -98,7 +98,7 @@ class TicketController extends Controller
      */
     public function show($id)
     {
-        $ticket = Ticket::findOrFail($id);
+        $ticket = Ticket::with(['reporter', 'assigments.technicians', 'assigments.leader', 'assigments.dispatcher'])->findOrFail($id);
         return response()->json($ticket);
     }
 
