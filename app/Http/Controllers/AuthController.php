@@ -234,7 +234,7 @@ class AuthController extends Controller
             ['token' => Hash::make($token), 'created_at' => Carbon::now()]
         );
 
-        $resetUrl = config('app.frontend_url', 'http://localhost:5173')
+        $resetUrl = config('app.frontend_url', 'http://192.168.1.2:5173')
             . '/reset-password?token=' . $token
             . '&email=' . urlencode($request->email);
 

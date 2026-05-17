@@ -48,7 +48,8 @@ class DatabaseSeeder extends Seeder
             Role::create(['name' => 'admin',       'guard_name' => 'web']),
             Role::create(['name' => 'leader',      'guard_name' => 'web']),
             Role::create(['name' => 'dispatcher',  'guard_name' => 'web']),
-            Role::create(['name' => 'technician',  'guard_name' => 'web']),
+	    Role::create(['name' => 'technician',  'guard_name' => 'web']),
+	    Role::create(['name' => 'employee',  'guard_name' => 'web']),
         ]);
 
         $admin->assignRole($roles->firstWhere('name', 'admin'));
