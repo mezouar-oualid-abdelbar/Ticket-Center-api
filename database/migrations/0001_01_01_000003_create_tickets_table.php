@@ -27,7 +27,7 @@ return new class extends Migration
                 'assigned',
                 'in_progress',
                 'resolved',
-                'closed'
+                // 'closed'
             ])->default('open');
 
             $table->enum('priority', [
