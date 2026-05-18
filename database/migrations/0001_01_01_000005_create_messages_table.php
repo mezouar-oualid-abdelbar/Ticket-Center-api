@@ -15,9 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('ticket_id')
                 ->constrained('tickets');
-            $table->foreignId('sender_id')
-                ->constrained('users')
-                ->cascadeOnDelete();
+            $table->enum('type', ['chat', 'system'])->default('chat');
+            $table->foreignId('sender_id')->nullable()->constrained('users');  
             $table->string('message');
             $table->timestamps();
         });
