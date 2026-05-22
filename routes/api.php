@@ -3,7 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\{
     AssignmentController,
     AuthController,
@@ -58,6 +58,8 @@ Route::middleware(['auth:sanctum', 'role:dispatcher|admin'])
         Route::get('/ticket',               [TicketController::class, 'all']);
         Route::get('/ticket/{id}',          [TicketController::class, 'show']);
         Route::put('/ticket/{id}',          [TicketController::class, 'update']);
+        Route::put('/assignments/{id}',          [AssignmentController::class, 'update']);
+
         Route::get('/technicians',          [UserController::class, 'technicians']);
         Route::post('/ticket/{id}/assign',  [AssignmentController::class, 'assign']);
         Route::get('/ticket/{id}/progress', [TicketController::class, 'progress']);
@@ -80,9 +82,25 @@ Route::middleware(['auth:sanctum', 'role:technician|admin'])
 
 /*
 |--------------------------------------------------------------------------
+| notifications 
+|--------------------------------------------------------------------------
+*/
+
+    
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/notifications',              [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+    Route::patch('/notifications/read-all',   [NotificationController::class, 'markAllRead']);
+    Route::patch('/notifications/{id}/read',  [NotificationController::class, 'markRead']);
+    Route::delete('/notifications',           [NotificationController::class, 'clearAll']);
+});
+/*
+|--------------------------------------------------------------------------
 | Admin only — user management
 |--------------------------------------------------------------------------
 */
+
 Route::middleware(['auth:sanctum', 'role:admin'])
     ->prefix('admin')
     ->group(function () {
@@ -92,3 +110,4 @@ Route::middleware(['auth:sanctum', 'role:admin'])
         Route::patch('/users/{id}/role',   [UserController::class, 'assignRole']);
         Route::get('/roles',               [UserController::class, 'roles']);
     });
+
